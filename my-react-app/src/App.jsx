@@ -2,8 +2,6 @@ import { useState, useEffect, useRef } from 'react'
 import {
   getSupabase,
   isSupabaseConfigured,
-  getSupabaseConfig,
-  saveSupabaseConfig,
   getDeviceId,
   generateRoomCode
 } from './supabaseClient'
@@ -156,7 +154,6 @@ function Board({ xIsNext, squares, onPlay, players, myRole, isOnline }) {
   const winningLine = calculateWinningLine(squares);
   const isBoardFull = squares.every(square => square !== null);
 
-  // In online mode, determine if current device is authorized to click
   const isMyTurn = !isOnline || (myRole === 'X' && xIsNext) || (myRole === 'O' && !xIsNext);
   const canPlayMove = isMyTurn && !winner && !isBoardFull;
 
@@ -263,12 +260,6 @@ export default function Game() {
   const [myRole, setMyRole] = useState(null); // 'X' | 'O' | 'SPECTATOR'
   const [onlineStatus, setOnlineStatus] = useState('idle'); // 'waiting_opponent' | 'connected' | 'error'
   const [copiedLink, setCopiedLink] = useState(false);
-  const [showConfigModal, setShowConfigModal] = useState(false);
-  const [showSqlModal, setShowSqlModal] = useState(false);
-
-  // Supabase dynamic credentials state
-  const [customUrl, setCustomUrl] = useState(getSupabaseConfig().url);
-  const [customKey, setCustomKey] = useState(getSupabaseConfig().key);
 
   // Match State
   const [players, setPlayers] = useState(null);
@@ -376,7 +367,7 @@ export default function Game() {
   // CREATE ONLINE ROOM
   async function handleCreateOnlineRoom() {
     if (!isSupabaseConfigured()) {
-      setShowConfigModal(true);
+      alert("Supabase credentials not configured in .env!");
       return;
     }
     if (!myPlayerName.trim()) {
@@ -407,11 +398,7 @@ export default function Game() {
       ]);
 
       if (error) {
-        if (error.message.includes('relation "public.games" does not exist')) {
-          setShowSqlModal(true);
-        } else {
-          alert("Error creating room: " + error.message);
-        }
+        alert("Error creating room: " + error.message);
         return;
       }
 
@@ -424,7 +411,7 @@ export default function Game() {
   // JOIN ONLINE ROOM
   async function handleJoinOnlineRoom() {
     if (!isSupabaseConfigured()) {
-      setShowConfigModal(true);
+      alert("Supabase credentials not configured in .env!");
       return;
     }
     if (!myPlayerName.trim()) {
@@ -575,12 +562,6 @@ export default function Game() {
     setTimeout(() => setCopiedLink(false), 2500);
   }
 
-  function saveConfig() {
-    saveSupabaseConfig(customUrl, customKey);
-    setShowConfigModal(false);
-    alert("Supabase credentials saved successfully!");
-  }
-
   const positionDescriptions = [
     'Top-Left (a3)', 'Top-Center (b3)', 'Top-Right (c3)',
     'Mid-Left (a2)', 'Center (b2)', 'Mid-Right (c2)',
@@ -627,14 +608,9 @@ export default function Game() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowConfigModal(true)}
-              className="text-xs bg-[#312e2b] hover:bg-[#3d3a36] text-gray-300 px-3 py-1.5 rounded-lg border border-gray-700 transition flex items-center gap-1.5 cursor-pointer"
-            >
-              <span>⚡ Supabase Setup</span>
-              <span className={`w-2 h-2 rounded-full ${isSupabaseConfigured() ? 'bg-green-500' : 'bg-amber-500'}`} />
-            </button>
+          <div className="flex items-center gap-2 text-xs bg-[#2b2926] px-3 py-1.5 rounded-full border border-gray-700 text-gray-300 font-medium">
+            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+            <span>Online 2-Player Match</span>
           </div>
         </header>
 
@@ -822,147 +798,8 @@ export default function Game() {
 
         {/* Footer */}
         <footer className="text-center py-4 text-xs text-gray-500 border-t border-[#302e2b]">
-          Tic-Tac-Toe • Supabase Real-Time Engine
+          Tic-Tac-Toe • Chess.com Style Interface
         </footer>
-
-        {/* SUPABASE CONFIG MODAL */}
-        {showConfigModal && (
-          <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-[#312e2b] rounded-2xl max-w-lg w-full p-6 border border-[#403d39] shadow-2xl space-y-4">
-              <div className="flex items-center justify-between border-b border-[#3d3b37] pb-3">
-                <h3 className="font-bold text-white text-base flex items-center gap-2">
-                  <span>⚡ Supabase Connection Settings</span>
-                </h3>
-                <button
-                  onClick={() => setShowConfigModal(false)}
-                  className="text-gray-400 hover:text-white text-xl cursor-pointer"
-                >
-                  &times;
-                </button>
-              </div>
-
-              <p className="text-xs text-gray-300 leading-relaxed">
-                Connect your Supabase project to enable real-time cross-device multiplayer. Get these from your <strong>Supabase Dashboard &gt; Project Settings &gt; API</strong>:
-              </p>
-
-              <div className="space-y-3 text-xs">
-                <div>
-                  <label className="block text-gray-300 font-semibold mb-1">Project URL</label>
-                  <input
-                    type="text"
-                    value={customUrl}
-                    onChange={(e) => setCustomUrl(e.target.value)}
-                    placeholder="https://your-project.supabase.co"
-                    className="w-full bg-[#1e1d1a] border border-[#45423e] rounded-lg p-2.5 text-white font-mono text-xs focus:border-[#81b64c] focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-gray-300 font-semibold mb-1">Anon Public Key</label>
-                  <input
-                    type="text"
-                    value={customKey}
-                    onChange={(e) => setCustomKey(e.target.value)}
-                    placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                    className="w-full bg-[#1e1d1a] border border-[#45423e] rounded-lg p-2.5 text-white font-mono text-xs focus:border-[#81b64c] focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={saveConfig}
-                  className="flex-1 btn-chess-green text-white font-bold py-2.5 rounded-lg text-xs cursor-pointer"
-                >
-                  Save Credentials
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowSqlModal(true)}
-                  className="btn-chess-secondary text-gray-300 font-bold px-3 py-2.5 rounded-lg text-xs cursor-pointer"
-                >
-                  View SQL Schema
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* SQL SCHEMA MODAL */}
-        {showSqlModal && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-[#21201d] rounded-2xl max-w-xl w-full p-6 border border-[#403d39] shadow-2xl space-y-4">
-              <div className="flex items-center justify-between border-b border-[#302e2b] pb-3">
-                <h3 className="font-bold text-white text-base">Supabase SQL Table Setup</h3>
-                <button
-                  onClick={() => setShowSqlModal(false)}
-                  className="text-gray-400 hover:text-white text-xl cursor-pointer"
-                >
-                  &times;
-                </button>
-              </div>
-
-              <p className="text-xs text-gray-300">
-                Run this single SQL command in your <strong>Supabase SQL Editor</strong> to create the games table and enable Realtime:
-              </p>
-
-              <pre className="bg-[#181715] p-3 rounded-lg text-[11px] text-[#81b64c] font-mono overflow-x-auto max-h-48 border border-gray-800">
-{`create table public.games (
-  id uuid primary key default gen_random_uuid(),
-  room_code text unique not null,
-  player_x_name text not null,
-  player_x_id text not null,
-  player_o_name text,
-  player_o_id text,
-  squares jsonb not null default '["", "", "", "", "", "", "", "", ""]'::jsonb,
-  current_turn text not null default 'X',
-  winner text,
-  winning_line jsonb,
-  history jsonb not null default '[]'::jsonb,
-  scores jsonb not null default '{"X": 0, "O": 0, "draws": 0}'::jsonb,
-  status text not null default 'waiting',
-  created_at timestamptz default now()
-);
-
-alter publication supabase_realtime add table public.games;
-
-alter table public.games enable row level security;
-create policy "Public Access" on public.games for all using (true) with check (true);`}
-              </pre>
-
-              <button
-                type="button"
-                onClick={() => {
-                  navigator.clipboard.writeText(`create table public.games (
-  id uuid primary key default gen_random_uuid(),
-  room_code text unique not null,
-  player_x_name text not null,
-  player_x_id text not null,
-  player_o_name text,
-  player_o_id text,
-  squares jsonb not null default '["", "", "", "", "", "", "", "", ""]'::jsonb,
-  current_turn text not null default 'X',
-  winner text,
-  winning_line jsonb,
-  history jsonb not null default '[]'::jsonb,
-  scores jsonb not null default '{"X": 0, "O": 0, "draws": 0}'::jsonb,
-  status text not null default 'waiting',
-  created_at timestamptz default now()
-);
-
-alter publication supabase_realtime add table public.games;
-
-alter table public.games enable row level security;
-create policy "Public Access" on public.games for all using (true) with check (true);`);
-                  alert("SQL copied to clipboard!");
-                }}
-                className="w-full btn-chess-green text-white font-bold py-2.5 rounded-lg text-xs cursor-pointer"
-              >
-                📋 Copy SQL to Clipboard
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     );
   }
