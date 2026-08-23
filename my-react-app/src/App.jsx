@@ -603,7 +603,7 @@ export default function Game() {
                 TicTacToe<span className="text-[#81b64c]">.com</span>
               </span>
               <span className="text-[10px] text-gray-400 font-medium -mt-1">
-                Chess-Style Arena • Real-Time Multiplayer
+               Real-Time Multiplayer Tic-Tac-Toe
               </span>
             </div>
           </div>
@@ -798,7 +798,7 @@ export default function Game() {
 
         {/* Footer */}
         <footer className="text-center py-4 text-xs text-gray-500 border-t border-[#302e2b]">
-          Tic-Tac-Toe • Chess.com Style Interface
+          &copy; 2026 Kunai Debnath. All rights reserved.
         </footer>
       </div>
     );
